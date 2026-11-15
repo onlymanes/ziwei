@@ -328,6 +328,20 @@
       <p class="note" data-en="Randomness is not evidence of fate — it is evidence that this is not fate: the star that was cast and the hexagram that was drawn are numbers you can check, not the will of heaven.">随机不是命运的证据——它是“这不是命运”的证据：掷到的星、抽到的卦，都是可以复核的数，不是天意。</p>
     </div>
 
+    <div class="card" id="deepCard">
+      <h2 data-en="Deep version · Coming soon">深度版 · 即将推出</h2>
+      <p data-en="The deep version will tell a longer story with a deeper reading of your chart — a paid unlock. It is still being built.">深度版会有更长的故事、更深的命盘解读——付费解锁。正在建设中。</p>
+      <p><button class="btn" id="deepBtn" data-en="Notify me when it launches">上线通知我</button></p>
+      <div id="deepEmailWrap" class="hidden">
+        <p data-en="Leave your email and we’ll write as soon as the deep version launches. We never share your address.">留下邮箱，上线第一时间通知你。绝不外泄。</p>
+        <div class="email-row">
+          <input type="email" id="deepEmailInput" placeholder="你的邮箱" data-en-ph="Your email" maxlength="100">
+          <button class="btn ghost" id="deepEmailBtn" data-en="Keep me posted">告诉我</button>
+        </div>
+        <p class="note" id="deepEmailNote" style="margin:6px 0 0;"></p>
+      </div>
+    </div>
+
     <div class="card" id="flowerCard">
       <h2 data-en="Support this project · A little flower">支持这个项目 · 一朵小花</h2>
       <p data-en="If you liked it, please send this answer a little flower to support this project — one flower is 1 unit of local currency, no upper limit, as many as you like.">如果你满意，请给这个答案送一朵小花，支持这个项目——一朵花 1 元（当地货币 1 元），不设上限，多少随你。</p>
@@ -478,7 +492,7 @@ const HEXAGRAM_MEANINGS_EN = {
 const T = {
   pickSolar: { zh: '请选阳历年月日。', en: 'Please pick the solar date (year, month, day).' },
   pickLunar: { zh: '请选农历年月日。', en: 'Please pick the lunar date (year, month, day).' },
-  working: { zh: '正在排盘、起卦、讲故事……（约半分钟到一分钟）', en: 'Casting the chart, drawing the hexagram, telling the story… (about half a minute to a minute)' },
+  working: { zh: '正在排盘、起卦、讲故事……（约半分钟到两分钟）', en: 'Casting the chart, drawing the hexagram, telling the story… (about half a minute to two minutes)' },
   engineLoading: { zh: '命盘引擎加载中，请稍候…', en: 'Loading the chart engine, please wait…' },
   engineTimeout: { zh: '命盘引擎加载超时，请刷新页面重试。', en: 'The chart engine took too long to load. Please refresh the page and try again.' },
   cancelled: { zh: '已取消。', en: 'Cancelled.' },
@@ -913,7 +927,7 @@ $('formCard').addEventListener('submit', async (e) => { e.preventDefault();
           method: 'POST',
           headers: { 'Content-Type': 'text/plain' },
           body: JSON.stringify(payload),
-        }, 90000, genController.signal);
+        }, 120000, genController.signal);
         break;
       } catch (err) {
         if (genController.signal.aborted) { statusEl.textContent = t('cancelled'); cleanupGen(); return; }
@@ -1137,6 +1151,39 @@ $('emailBtn').onclick = async () => {
   } catch (e) {
     note.textContent = LANG === 'en' ? 'Something went wrong — please try again later.' : '没发出去，请稍后再试。';
     $('emailBtn').disabled = false;
+  }
+};
+
+/* ---------- 深度版 · 即将推出 ---------- */
+$('deepBtn').onclick = () => {
+  $('deepEmailWrap').classList.remove('hidden');
+  $('deepBtn').style.display = 'none';
+  $('deepEmailInput').focus();
+};
+$('deepEmailBtn').onclick = async () => {
+  const input = $('deepEmailInput');
+  const note = $('deepEmailNote');
+  const email = input.value.trim();
+  if (!email) { note.textContent = LANG === 'en' ? 'Leave your email and we’ll write when the deep version launches.' : '留下邮箱，上线第一时间通知你。'; return; }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { note.textContent = LANG === 'en' ? 'That email doesn’t look right — please check it.' : '这个邮箱看起来不对，请检查一下。'; return; }
+  $('deepEmailBtn').disabled = true;
+  note.textContent = LANG === 'en' ? 'Sending…' : '正在发送…';
+  try {
+    const r = await fetch(API_BASE + '/api/ziwei-email', {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({ email: email }),
+    });
+    if (r.ok) {
+      note.textContent = LANG === 'en' ? 'Got it — we’ll write as soon as the deep version launches.' : '收到了——深度版上线时第一时间写信给你。';
+      input.value = '';
+    } else {
+      note.textContent = LANG === 'en' ? 'Something went wrong — please try again later.' : '没发出去，请稍后再试。';
+      $('deepEmailBtn').disabled = false;
+    }
+  } catch (e) {
+    note.textContent = LANG === 'en' ? 'Something went wrong — please try again later.' : '没发出去，请稍后再试。';
+    $('deepEmailBtn').disabled = false;
   }
 };
 

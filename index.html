@@ -383,7 +383,7 @@
   </footer>
 </div>
 
-<script src="ziwei-engine.js" defer></script>
+<script src="https://api.onlymanes.ai/ziwei-engine.js" defer></script>
 <script>
 /* 紫微星娱乐测试 V1.1
  * 排盘引擎：Renhuai123/ziwei-doushu（MIT，倪海厦《天纪》体系），经 ZiweiEngine bundle 接入。
@@ -494,6 +494,9 @@ function t(key) { return (T[key] && T[key][LANG]) || (T[key] && T[key].zh) || ke
 
 /* 引擎未加载时禁用提交，防早提交拿到无命盘的故事（豆包第四轮 P0-2）。
    引擎是 defer 加载的大文件，慢网下可能晚于表单出现；轮询到 ZiweiEngine 就绪才放行。
+   引擎现经 api.onlymanes.ai（Cloudflare 边缘）代理（豆包第五轮根治），
+   正常几秒即到；超时放宽到 120s（豆包第五轮建议 90–120s），只作慢网兜底，
+   避免 60s 与慢速加载竞态、把慢网用户挡在门外。
    注意：必须放在 t()/T 定义之后，否则会因 T 未初始化而抛错、整个脚本中断。 */
 submitBtn.disabled = true;
 statusEl.textContent = t('engineLoading');
@@ -505,7 +508,7 @@ statusEl.textContent = t('engineLoading');
       clearInterval(timer);
       submitBtn.disabled = false;
       if (statusEl.textContent === t('engineLoading')) statusEl.textContent = '';
-    } else if (waited >= 60000) {
+    } else if (waited >= 120000) {
       clearInterval(timer);
       statusEl.textContent = t('engineTimeout');
     }

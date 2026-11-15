@@ -1231,9 +1231,12 @@ async function recordGift(token, method) {
 /* ---------- 访问统计 beacon（与 /test 页同一套） ---------- */
 (function () {
   try {
+    var ctrl = new AbortController();
+    setTimeout(function () { try { ctrl.abort(); } catch (e) {} }, 15000);
     fetch(API_BASE + '/api/visit', {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain' },
+      signal: ctrl.signal,
       body: JSON.stringify({
         path: location.pathname, ref: document.referrer,
         lang: navigator.language, tz: Intl.DateTimeFormat().resolvedOptions().timeZone,
@@ -1245,13 +1248,30 @@ async function recordGift(token, method) {
 })();
 
 /* ---------- 访客计数（同一个 IP 只算一个；显示疑似真人去重数） ---------- */
+/* 12 秒超时、失败重试一次、两次都失败显示“—”，不让页脚永久停在“加载中…” */
 (function () {
   const el = $('visitorCount');
   if (!el) return;
-  fetch(API_BASE + '/api/visitors')
-    .then(r => r.json())
-    .then(j => { if (j && typeof j.likely_human_visitors === 'number') el.textContent = String(j.likely_human_visitors); })
-    .catch(function () { var vl = document.getElementById('visitorLine'); if (vl) vl.style.display = 'none'; });
+  function loadVisitors(attempt) {
+    var ctrl = new AbortController();
+    var timer = setTimeout(function () { try { ctrl.abort(); } catch (e) {} }, 12000);
+    fetch(API_BASE + '/api/visitors', { signal: ctrl.signal })
+      .then(function (r) { return r.json(); })
+      .then(function (j) {
+        clearTimeout(timer);
+        if (j && typeof j.likely_human_visitors === 'number') {
+          el.textContent = String(j.likely_human_visitors);
+        } else {
+          throw new Error('bad response');
+        }
+      })
+      .catch(function () {
+        clearTimeout(timer);
+        if (attempt < 2) { loadVisitors(attempt + 1); return; }
+        el.textContent = '—';
+      });
+  }
+  loadVisitors(1);
 })();
 
 /* 应用保存过的语言偏好 */

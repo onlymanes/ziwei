@@ -979,7 +979,7 @@ function setupFlower() {
   const token = (crypto.randomUUID ? crypto.randomUUID() : ('gift-' + Date.now()));
   const returnUrl = location.origin + location.pathname + '?flower=returned&gift=' + encodeURIComponent(token);
   const pp = 'https://www.paypal.com/cgi-bin/webscr?cmd=_xclick'
-    + '&business=' + encodeURIComponent('onlymanes@paypal.com')
+    + '&business=' + encodeURIComponent('helen.chh.zhang@gmail.com')
     + '&item_name=' + encodeURIComponent(LANG === 'en' ? 'Ziwei Star story · a little flower' : '紫微星故事 · 一朵小花')
     + '&amount=1&currency_code=CAD'
     + '&return=' + encodeURIComponent(returnUrl)

@@ -145,6 +145,16 @@
   }
   blockquote small { color:var(--muted); }
   footer { text-align:center; color:var(--faint); font-size:12.5px; margin-top:30px; line-height:1.6; }
+  .chart-grid { display:grid; grid-template-columns:repeat(3, 1fr); gap:8px; margin-top:10px; }
+  @media (max-width:560px){ .chart-grid{ grid-template-columns:repeat(2, 1fr); } }
+  .chart-cell { border:1px solid var(--card-line); border-radius:10px; padding:10px 12px; font-size:13.5px; line-height:1.7; }
+  .chart-cell .pname { color:var(--gold); font-weight:600; }
+  .chart-cell .stars { color:var(--ink); }
+  .chart-cell .empty { color:var(--muted); }
+  .chart-cell.life { border-color:var(--gold); background:rgba(232,201,106,.08); }
+  .chart-cell .ziwei-mark { color:var(--gold); }
+  .email-row { display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-top:8px; }
+  .email-row input[type=email] { flex:1; min-width:200px; padding:10px 12px; border-radius:10px; border:1px solid var(--card-line); background:rgba(255,255,255,.06); color:var(--ink); font-size:14px; }
   .hidden { display:none !important; }
 </style>
 </head>
@@ -295,6 +305,13 @@
       <p class="kv" id="meihuaInfo"></p>
     </div>
 
+    <div class="card" id="chartCard">
+      <h2 data-en="Your chart">你的命盘</h2>
+      <p class="kv" id="chartMeta"></p>
+      <div id="chartGrid" class="chart-grid"></div>
+      <p class="note" data-en="This is the chart the story was told from. The gold frame is your Life Palace; ★ marks the palace where Ziwei (A-Zi’s star) falls.">这就是故事依据的命盘。金框是你的命宫；★ 是紫微（阿紫的星）落的宫。</p>
+    </div>
+
     <div class="card">
       <h2 data-en="How this story came to be">这个故事是怎么来的</h2>
       <ul class="audit" id="auditList" style="padding-left:20px; font-size:14px; line-height:1.8;"></ul>
@@ -316,6 +333,17 @@
         <div class="flower-big" id="flowerBig"></div>
         <p style="text-align:center;"><span data-en="Thank you for your flower. It has bloomed right here.">谢谢你的花。它已经开在这里了。</span><span id="flowerColorNote"></span><br><small style="color:var(--muted);" data-en="V1 only records your voluntary confirmation; it does not verify payment via a callback. Automatic verification is a V2 feature.">V1 只记录你的自愿确认，未接支付回调核对到账；自动核销是 V2 的事。</small></p>
       </div>
+    </div>
+
+    <div class="card" id="shareCard">
+      <h2 data-en="Share &amp; keep in touch">分享与订阅</h2>
+      <p><button class="btn" id="shareBtn" data-en="Share this test">分享这个测试</button> <span id="shareNote" style="font-size:13.5px; color:var(--muted);"></span></p>
+      <p data-en="Want a deeper version? Leave your email (optional — we only write when there is a deeper version, and never share your address).">想要更深版本？留下邮箱（自愿——只在有更深版本时才写信，绝不外泄）。</p>
+      <div class="email-row">
+        <input type="email" id="emailInput" placeholder="你的邮箱（可不填）" data-en-ph="Your email (optional)" maxlength="100">
+        <button class="btn ghost" id="emailBtn" data-en="Keep me posted">告诉我</button>
+      </div>
+      <p class="note" id="emailNote" style="margin:6px 0 0;"></p>
     </div>
   </div>
 
@@ -341,7 +369,7 @@
     <span data-en="A Ziwei Star (A-Zi) entertainment test: stories told with Ziwei Dou Shu and Ziwei chart casting — never a fate prediction.">紫微星（阿紫）娱乐测试：用紫微斗数与紫微排盘讲故事，不预测命运。</span><br>
 <span id="visitorLine"><span data-en="Total unique visitors">累计去重访客</span> <span id="visitorCount">加载中…</span> <small data-en="(one count per IP)">（同一 IP 只算一次）</small></span>
     <br>
-    <span data-en-html="Operated by onlymanes · Contact: <a href=&quot;mailto:onlymanes@gmail.com&quot; style=&quot;color:var(--faint);&quot;>onlymanes@gmail.com</a> · <a href=&quot;/privacy.html&quot; style=&quot;color:var(--faint);&quot;>Privacy</a> · <a href=&quot;/terms.html&quot; style=&quot;color:var(--faint);&quot;>Terms</a>">运营主体：onlymanes · 联系：<a href="mailto:onlymanes@gmail.com" style="color:var(--faint);">onlymanes@gmail.com</a> · <a href="/privacy.html" style="color:var(--faint);">隐私政策</a> · <a href="/terms.html" style="color:var(--faint);">服务条款</a></span><br>
+    <span data-en-html="Operated by onlymanes · Contact: <a href=&quot;mailto:onlymanes@gmail.com&quot; style=&quot;color:var(--faint);&quot;>onlymanes@gmail.com</a> · <a href=&quot;https://onlymanes.ai/privacy.html&quot; style=&quot;color:var(--faint);&quot;>Privacy</a> · <a href=&quot;https://onlymanes.ai/terms.html&quot; style=&quot;color:var(--faint);&quot;>Terms</a>">运营主体：onlymanes · 联系：<a href="mailto:onlymanes@gmail.com" style="color:var(--faint);">onlymanes@gmail.com</a> · <a href="https://onlymanes.ai/privacy.html" style="color:var(--faint);">隐私政策</a> · <a href="https://onlymanes.ai/terms.html" style="color:var(--faint);">服务条款</a></span><br>
   </footer>
 </div>
 
@@ -440,8 +468,7 @@ const HEXAGRAM_MEANINGS_EN = {
 const T = {
   pickSolar: { zh: '请选阳历年月日。', en: 'Please pick the solar date (year, month, day).' },
   pickLunar: { zh: '请选农历年月日。', en: 'Please pick the lunar date (year, month, day).' },
-  needChildName: { zh: '选了“一位子女”，请填孩子的名字。', en: 'You chose “A child” — please fill in the child’s name.' },
-  working: { zh: '正在排盘、起卦、讲故事……（约十几秒）', en: 'Casting the chart, drawing the hexagram, telling the story… (about ten seconds)' },
+  working: { zh: '正在排盘、起卦、讲故事……（约半分钟）', en: 'Casting the chart, drawing the hexagram, telling the story… (about half a minute)' },
   chartError: { zh: '排盘出错，请检查出生日期后重试。', en: 'Chart error — please check the birth date and try again.' },
   lunarInvalid: { zh: '农历日期无效，请重新选择。', en: 'Invalid lunar date — please pick again.' },
   dailyLimit: { zh: '今天已经测过一次啦，明天再来。', en: 'You have already had one reading today. Please come back tomorrow.' },
@@ -735,7 +762,7 @@ function engineChartSummary(chart, solar) {
     ziweiPalace: zp ? zp.name : '',
     spousePalace: palaceSummary(chart, '夫妻'),
     careerPalace: palaceSummary(chart, '官禄'),
-    palaces: chart.palaces.map(p => p.name + ':' + (p.stars.filter(s => s.type === 'major').map(s => s.name).join('、') || '空宫')),
+    palaces: chart.palaces.map(p => p.name + ':' + (p.stars.filter(s => s.type === 'major').map(s => s.name + (s.brightnessRaw ? '(' + s.brightnessRaw + ')' : '') + (s.siHua ? '化' + s.siHua : '')).join('、') || '空宫')),
   };
 }
 function buildUserChart(form) {
@@ -805,6 +832,7 @@ $('formCard').addEventListener('submit', async (e) => { e.preventDefault();
   }
   const payload = {
     mode: mode,
+    idemKey: (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : (Date.now() + '-' + Math.random().toString(36).slice(2)),
     submitTime: { y: now.getFullYear(), mo: now.getMonth() + 1, d: now.getDate(), h: now.getHours(), mi: now.getMinutes(), s: now.getSeconds() },
     userChart: charts.userChart,
     timeKnown: charts.timeKnown,
@@ -824,7 +852,7 @@ $('formCard').addEventListener('submit', async (e) => { e.preventDefault();
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload),
-        }, 30000);
+        }, 90000);
         break;
       } catch (err) {
         if (attempt === 0) { statusEl.textContent = t('retrying'); continue; }
@@ -844,7 +872,7 @@ $('formCard').addEventListener('submit', async (e) => { e.preventDefault();
       return;
     }
     localStorage.setItem('ziwei_last_day', new Date().toISOString().slice(0, 10));
-    renderResult(j, form);
+    renderResult(j, form, charts.userChart);
     statusEl.textContent = '';
   } catch (e) {
     statusEl.innerHTML = t('connFailed') + ' <a href="mailto:onlymanes@gmail.com" style="color:var(--gold);">反馈：onlymanes@gmail.com</a>';
@@ -919,9 +947,38 @@ const HEXAGRAM_MEANINGS = {
   63: '既济是已经成了、过河了，讲的是事办成了，但成了之后也要守住。',
   64: '未济是还没成、没过河，讲的是事还没完，火候未到，再等等。',
 };
+/* ---------- 命盘 12 宫格 ---------- */
+function renderChart(userChart) {
+  const grid = $('chartGrid');
+  const meta = $('chartMeta');
+  if (!userChart || !Array.isArray(userChart.palaces)) {
+    $('chartCard').classList.add('hidden');
+    return;
+  }
+  $('chartCard').classList.remove('hidden');
+  const ziweiPalace = userChart.ziweiPalace || '';
+  const metaBits = [];
+  if (userChart.soul) metaBits.push(LANG === 'en' ? ('Life master: ' + userChart.soul) : ('命主：' + userChart.soul));
+  if (userChart.body) metaBits.push(LANG === 'en' ? ('Body master: ' + userChart.body) : ('身主：' + userChart.body));
+  if (userChart.fiveElements) metaBits.push(LANG === 'en' ? ('Five-elements phase: ' + userChart.fiveElements) : ('五行局：' + userChart.fiveElements));
+  meta.textContent = metaBits.join(' · ');
+  grid.innerHTML = userChart.palaces.map(entry => {
+    const i = String(entry).indexOf(':');
+    const name = i >= 0 ? String(entry).slice(0, i) : String(entry);
+    const stars = i >= 0 ? String(entry).slice(i + 1) : '';
+    const dispName = name.endsWith('宫') ? name : (name + '宫');
+    const isLife = name === '命宫';
+    const isZiwei = !!ziweiPalace && (name === ziweiPalace || dispName === ziweiPalace);
+    const starHtml = stars === '空宫'
+      ? '<span class="empty">' + esc(LANG === 'en' ? 'empty' : '空宫') + '</span>'
+      : '<span class="stars">' + esc(stars) + '</span>';
+    return '<div class="chart-cell' + (isLife ? ' life' : '') + '"><div class="pname">' + esc(dispName) + (isZiwei ? ' <span class="ziwei-mark">★</span>' : '') + '</div><div>' + starHtml + '</div></div>';
+  }).join('');
+}
+
 /* ---------- 渲染结果 ---------- */
 function esc(s) { return String(s == null ? '' : s); }
-function renderResult(j, form) {
+function renderResult(j, form, userChart) {
   lastStory = j;
   lastResultJ = j;
   lastResultForm = form;
@@ -929,11 +986,56 @@ function renderResult(j, form) {
   $('result').classList.remove('hidden');
   renderStoryText(j);
   $('meihuaInfo').innerHTML = meihuaHTML(j);
+  renderChart(userChart);
   $('auditList').innerHTML = auditHTML(j, form).map(i => '<li>' + i + '</li>').join('');
 
   setupFlower();
   $('result').scrollIntoView({ behavior: 'smooth' });
 }
+
+/* ---------- 分享 ---------- */
+$('shareBtn').onclick = async () => {
+  const url = 'https://ziwei.onlymanes.ai/';
+  const text = LANG === 'en' ? 'My Ziwei Star story — a little poem from the stars.' : '我的紫微星故事——星星写的一首小诗。';
+  const note = $('shareNote');
+  if (navigator.share) {
+    try { await navigator.share({ title: '紫微星 · 阿紫', text: text, url: url }); note.textContent = LANG === 'en' ? 'Shared.' : '已分享。'; return; } catch (e) { /* 用户取消则走复制链接 */ }
+  }
+  try {
+    await navigator.clipboard.writeText(url);
+    note.textContent = LANG === 'en' ? 'Link copied.' : '链接已复制。';
+  } catch (e) {
+    note.textContent = url;
+  }
+};
+
+/* ---------- 自愿邮箱收集 ---------- */
+$('emailBtn').onclick = async () => {
+  const input = $('emailInput');
+  const note = $('emailNote');
+  const email = input.value.trim();
+  if (!email) { note.textContent = LANG === 'en' ? 'Email is optional — leave it blank if you prefer.' : '邮箱是自愿的，不想留可以空着。'; return; }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { note.textContent = LANG === 'en' ? 'That email doesn’t look right — please check it.' : '这个邮箱看起来不对，请检查一下。'; return; }
+  $('emailBtn').disabled = true;
+  note.textContent = LANG === 'en' ? 'Sending…' : '正在发送…';
+  try {
+    const r = await fetch(API_BASE + '/api/ziwei-email', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: email }),
+    });
+    if (r.ok) {
+      note.textContent = LANG === 'en' ? 'Got it — we’ll write only when there’s a deeper version.' : '收到了——只在有更深版本时才写信。';
+      input.value = '';
+    } else {
+      note.textContent = LANG === 'en' ? 'Something went wrong — please try again later.' : '没发出去，请稍后再试。';
+      $('emailBtn').disabled = false;
+    }
+  } catch (e) {
+    note.textContent = LANG === 'en' ? 'Something went wrong — please try again later.' : '没发出去，请稍后再试。';
+    $('emailBtn').disabled = false;
+  }
+};
 
 /* 语言切换：故事区与顶部两处按钮共用同一套 setLang */
 $('btnZh').onclick = () => setLang('zh');

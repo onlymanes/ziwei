@@ -111,6 +111,8 @@
     background:linear-gradient(135deg,#e8c96a,#c9a24a);
   }
   #submitBtn:disabled { opacity:.55; cursor:wait; }
+  #cancelBtn { background:transparent; border:1px solid var(--gold); color:var(--gold); border-radius:8px; padding:8px 14px; font-size:14px; cursor:pointer; margin-left:8px; }
+  #cancelBtn.hidden { display:none; }
   .status { min-height:20px; font-size:13.5px; color:var(--muted); text-align:center; margin-top:10px; }
   .chapter { margin:16px 0; }
   .chapter h3 { color:var(--gold); }
@@ -274,6 +276,7 @@
     <input type="text" id="sentence" placeholder="随便写一句……" data-en-ph="Write anything…" maxlength="100">
 
     <button id="submitBtn" type="submit" data-en="Begin the reading">开始测算</button>
+    <button id="cancelBtn" type="button" class="hidden" data-en="Cancel">取消</button>
     <div class="status" id="status"></div>
   </form>
 
@@ -301,7 +304,7 @@
     <div class="card">
       <h2 data-en="Tonight’s star">今晚的星</h2>
       <p class="kv" data-en="There are two candidate Ziwei Stars, and a 50% cast picked one. Tonight’s story is told by the one that was cast — everyone calls her A-Zi.">有两颗候选紫微星，50% 掷选定了一颗。今晚为你讲故事的，就是掷到的这一颗——大家叫她阿紫。</p>
-      <h3 data-en="Plum Blossom Numerology · The hexagram of this second">梅花易数 · 这一秒的卦</h3>
+      <h3 data-en="Plum Blossom Numerology (this test's variant) · The hexagram of this second">梅花易数（本测试变体）· 这一秒的卦</h3>
       <p class="kv" id="meihuaInfo"></p>
     </div>
 
@@ -310,6 +313,13 @@
       <p class="kv" id="chartMeta"></p>
       <div id="chartGrid" class="chart-grid"></div>
       <p class="note" data-en="This is the chart the story was told from. The gold frame is your Life Palace; ★ marks the palace where Ziwei (A-Zi’s star) falls.">这就是故事依据的命盘。金框是你的命宫；★ 是紫微（阿紫的星）落的宫。</p>
+    </div>
+
+    <div class="card" id="starChartCard">
+      <h2 data-en="The Ziwei Star's chart">紫微星的命盘</h2>
+      <p class="kv" id="starChartMeta"></p>
+      <div id="starChartGrid" class="chart-grid"></div>
+      <p class="note" data-en="This is the Ziwei Star's chart that the story was told from — the one the server picked by a 50% random cast. The story's references to the Star's palaces and stars can be checked here. ★ marks the palace where Ziwei falls.">这就是故事依据的紫微星命盘——服务端 50% 随机掷选的那一颗。故事里提到紫微星的宫位与星曜，都可以在这里核对。★ 是紫微落的宫。</p>
     </div>
 
     <div class="card">
@@ -373,7 +383,7 @@
   </footer>
 </div>
 
-<script src="ziwei-engine.js"></script>
+<script src="ziwei-engine.js" defer></script>
 <script>
 /* 紫微星娱乐测试 V1.1
  * 排盘引擎：Renhuai123/ziwei-doushu（MIT，倪海厦《天纪》体系），经 ZiweiEngine bundle 接入。
@@ -469,6 +479,7 @@ const T = {
   pickSolar: { zh: '请选阳历年月日。', en: 'Please pick the solar date (year, month, day).' },
   pickLunar: { zh: '请选农历年月日。', en: 'Please pick the lunar date (year, month, day).' },
   working: { zh: '正在排盘、起卦、讲故事……（约半分钟）', en: 'Casting the chart, drawing the hexagram, telling the story… (about half a minute)' },
+  cancelled: { zh: '已取消。', en: 'Cancelled.' },
   chartError: { zh: '排盘出错，请检查出生日期后重试。', en: 'Chart error — please check the birth date and try again.' },
   lunarInvalid: { zh: '农历日期无效，请重新选择。', en: 'Invalid lunar date — please pick again.' },
   dailyLimit: { zh: '今天已经测过一次啦，明天再来。', en: 'You have already had one reading today. Please come back tomorrow.' },
@@ -625,7 +636,7 @@ function auditHTML(j, form) {
 const leapCache = {};
 function leapMonthOf(y) {
   if (leapCache[y] === undefined) {
-    try { leapCache[y] = ZiweiEngine.leapMonthOfLunarYear(y) || 0; } catch (e) { leapCache[y] = 0; }
+    try { leapCache[y] = ZiweiEngine.leapMonthOfLunarYear(y) || 0; } catch (e) { return 0; /* 引擎尚未加载时不缓存，待加载后再算 */ }
   }
   return leapCache[y];
 }
@@ -762,7 +773,13 @@ function engineChartSummary(chart, solar) {
     ziweiPalace: zp ? zp.name : '',
     spousePalace: palaceSummary(chart, '夫妻'),
     careerPalace: palaceSummary(chart, '官禄'),
-    palaces: chart.palaces.map(p => p.name + ':' + (p.stars.filter(s => s.type === 'major').map(s => s.name + (s.brightnessRaw ? '(' + s.brightnessRaw + ')' : '') + (s.siHua ? '化' + s.siHua : '')).join('、') || '空宫')),
+    palaces: chart.palaces.map(p => {
+      const majors = p.stars.filter(s => s.type === 'major').map(s => s.name + (s.brightnessRaw ? '(' + s.brightnessRaw + ')' : '') + (s.siHua ? '化' + s.siHua : ''));
+      const minors = p.stars.filter(s => s.type === 'minor').map(s => s.name);
+      const adj = p.stars.filter(s => s.type !== 'major' && s.type !== 'minor').map(s => s.name);
+      const all = majors.concat(minors, adj);
+      return p.name + ':' + (all.join('、') || '空宫');
+    }),
   };
 }
 function buildUserChart(form) {
@@ -793,7 +810,7 @@ function buildUserChart(form) {
 }
 
 /* ---------- 提交 ---------- */
-async function fetchWithTimeout(url, options, timeoutMs) { const c = new AbortController(); const timer = setTimeout(() => c.abort(), timeoutMs || 30000); try { return await fetch(url, Object.assign({}, options, { signal: c.signal })); } finally { clearTimeout(timer); } }
+async function fetchWithTimeout(url, options, timeoutMs, externalSignal) { const c = new AbortController(); const timer = setTimeout(() => c.abort(), timeoutMs || 30000); const onExternalAbort = () => c.abort(); if (externalSignal) { if (externalSignal.aborted) c.abort(); else externalSignal.addEventListener('abort', onExternalAbort, { once: true }); } try { return await fetch(url, Object.assign({}, options, { signal: c.signal })); } finally { clearTimeout(timer); if (externalSignal) externalSignal.removeEventListener('abort', onExternalAbort); } }
 $('formCard').addEventListener('submit', async (e) => { e.preventDefault();
   const mode = document.querySelector('input[name=mode]:checked').value;
   const calendar = document.querySelector('input[name=calendar]:checked').value;
@@ -844,6 +861,21 @@ $('formCard').addEventListener('submit', async (e) => { e.preventDefault();
     birthplace: form.birthplace,
     childName: form.childName,
   };
+  /* 生成中的已用时与取消：取消只中断本次请求，不触发重试。 */
+  const genController = new AbortController();
+  const cancelBtn = $('cancelBtn');
+  cancelBtn.classList.remove('hidden');
+  cancelBtn.onclick = () => genController.abort();
+  const genStartedAt = Date.now();
+  const tickElapsed = () => {
+    const s = Math.floor((Date.now() - genStartedAt) / 1000);
+    statusEl.textContent = (LANG === 'en')
+      ? t('working') + ' (' + s + ' s elapsed)'
+      : t('working') + '（已用 ' + s + ' 秒）';
+  };
+  tickElapsed();
+  const elapsedTimer = setInterval(tickElapsed, 1000);
+  const cleanupGen = () => { clearInterval(elapsedTimer); cancelBtn.classList.add('hidden'); submitBtn.disabled = false; };
   try {
     let r = null;
     for (let attempt = 0; attempt < 2; attempt++) {
@@ -852,12 +884,13 @@ $('formCard').addEventListener('submit', async (e) => { e.preventDefault();
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload),
-        }, 90000);
+        }, 90000, genController.signal);
         break;
       } catch (err) {
+        if (genController.signal.aborted) { statusEl.textContent = t('cancelled'); cleanupGen(); return; }
         if (attempt === 0) { statusEl.textContent = t('retrying'); continue; }
         statusEl.innerHTML = t('connFailed') + ' <a href="mailto:onlymanes@gmail.com" style="color:var(--gold);">反馈：onlymanes@gmail.com</a>';
-        submitBtn.disabled = false;
+        cleanupGen();
         return;
       }
     }
@@ -868,15 +901,18 @@ $('formCard').addEventListener('submit', async (e) => { e.preventDefault();
       else if (j.error === 'model_failed') msg = t('modelFailed');
       else msg = (LANG === 'en') ? (t('genericError') + ' (' + r.status + ')') : (j.message || ('出错了（' + r.status + '），请稍后再试。'));
       statusEl.textContent = msg;
-      if (r.status !== 429) submitBtn.disabled = false;
+      if (r.status === 429) { clearInterval(elapsedTimer); cancelBtn.classList.add('hidden'); /* 当日次数已用完，按钮保持禁用 */ }
+      else cleanupGen();
       return;
     }
     localStorage.setItem('ziwei_last_day', new Date().toISOString().slice(0, 10));
     renderResult(j, form, charts.userChart);
     statusEl.textContent = '';
+    cleanupGen();
   } catch (e) {
-    statusEl.innerHTML = t('connFailed') + ' <a href="mailto:onlymanes@gmail.com" style="color:var(--gold);">反馈：onlymanes@gmail.com</a>';
-    submitBtn.disabled = false;
+    if (genController.signal.aborted) { statusEl.textContent = t('cancelled'); }
+    else statusEl.innerHTML = t('connFailed') + ' <a href="mailto:onlymanes@gmail.com" style="color:var(--gold);">反馈：onlymanes@gmail.com</a>';
+    cleanupGen();
   }
 });
 
@@ -976,6 +1012,43 @@ function renderChart(userChart) {
   }).join('');
 }
 
+/* 紫微星命盘格（与你的命盘并列展示，供核对故事里引用的星盘）。
+   星盘的 palaces 只有主星；命宫/夫妻/官禄三宫另有 minor/adjective，拼进格子里。 */
+function renderStarChart(starChart) {
+  const card = $('starChartCard');
+  if (!starChart || !Array.isArray(starChart.palaces)) { card.classList.add('hidden'); return; }
+  card.classList.remove('hidden');
+  const meta = $('starChartMeta');
+  const metaBits = [];
+  if (starChart.soul) metaBits.push(LANG === 'en' ? ('Life master: ' + starChart.soul) : ('命主：' + starChart.soul));
+  if (starChart.body) metaBits.push(LANG === 'en' ? ('Body master: ' + starChart.body) : ('身主：' + starChart.body));
+  if (starChart.fiveElements) metaBits.push(LANG === 'en' ? ('Five-elements phase: ' + starChart.fiveElements) : ('五行局：' + starChart.fiveElements));
+  meta.textContent = metaBits.join(' · ');
+  const detail = {};
+  for (const key of ['lifePalace', 'spousePalace', 'careerPalace']) {
+    const p = starChart[key];
+    if (p && p.name) {
+      const extra = (p.minor || []).concat(p.adjective || []);
+      if (extra.length) detail[p.name] = extra.join('、');
+    }
+  }
+  const ziweiPalace = starChart.ziweiPalace || '';
+  $('starChartGrid').innerHTML = starChart.palaces.map(entry => {
+    const i = String(entry).indexOf(':');
+    const name = i >= 0 ? String(entry).slice(0, i) : String(entry);
+    let stars = i >= 0 ? String(entry).slice(i + 1) : '';
+    const extra = detail[name];
+    if (extra) stars = (stars === '空宫' ? extra : stars + '、' + extra);
+    const dispName = name.endsWith('宫') ? name : (name + '宫');
+    const isLife = name === '命宫';
+    const isZiwei = !!ziweiPalace && (name === ziweiPalace || dispName === ziweiPalace);
+    const starHtml = stars === '空宫'
+      ? '<span class="empty">' + esc(LANG === 'en' ? 'empty' : '空宫') + '</span>'
+      : '<span class="stars">' + esc(stars) + '</span>';
+    return '<div class="chart-cell' + (isLife ? ' life' : '') + '"><div class="pname">' + esc(dispName) + (isZiwei ? ' <span class="ziwei-mark">★</span>' : '') + '</div><div>' + starHtml + '</div></div>';
+  }).join('');
+}
+
 /* ---------- 渲染结果 ---------- */
 function esc(s) { return String(s == null ? '' : s); }
 function renderResult(j, form, userChart) {
@@ -987,6 +1060,7 @@ function renderResult(j, form, userChart) {
   renderStoryText(j);
   $('meihuaInfo').innerHTML = meihuaHTML(j);
   renderChart(userChart);
+  renderStarChart(j.starChart);
   $('auditList').innerHTML = auditHTML(j, form).map(i => '<li>' + i + '</li>').join('');
 
   setupFlower();

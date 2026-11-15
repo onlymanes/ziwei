@@ -206,7 +206,7 @@
   <!-- ============ 表单 ============ -->
   <form class="card" id="formCard">
     <h2 data-en="Before we begin, a little about you">开始之前，先认识一下你</h2>
-    <p class="note" data-en="Birth details are used only to generate this one story and are not saved. One reading per day (counted by IP).">出生信息只用于生成这一次的故事，不保存。每天限测 1 次（按 IP 计）。</p>
+    <p class="note" data-en="Birth details are used only to generate this one story and are not saved. One reading per day (counted by IP; temporarily unlimited while testing).">出生信息只用于生成这一次的故事，不保存。每天限测 1 次（按 IP 计；测试期间暂不限制）。</p>
 
     <label class="f" data-en="Which story would you like to hear? (required)">你想讲哪一个故事？（必选）</label>
     <div class="modes" id="modes">
@@ -379,7 +379,7 @@
     <span data-en="A Ziwei Star (A-Zi) entertainment test: stories told with Ziwei Dou Shu and Ziwei chart casting — never a fate prediction.">紫微星（阿紫）娱乐测试：用紫微斗数与紫微排盘讲故事，不预测命运。</span><br>
 <span id="visitorLine"><span data-en="Total unique visitors">累计去重访客</span> <span id="visitorCount">加载中…</span> <small data-en="(one count per IP)">（同一 IP 只算一次）</small></span>
     <br>
-    <span data-en-html="Operated by onlymanes · Contact: <a href=&quot;mailto:onlymanes@gmail.com&quot; style=&quot;color:var(--faint);&quot;>onlymanes@gmail.com</a> · <a href=&quot;https://onlymanes.ai/privacy.html&quot; style=&quot;color:var(--faint);&quot;>Privacy</a> · <a href=&quot;https://onlymanes.ai/terms.html&quot; style=&quot;color:var(--faint);&quot;>Terms</a>">运营主体：onlymanes · 联系：<a href="mailto:onlymanes@gmail.com" style="color:var(--faint);">onlymanes@gmail.com</a> · <a href="https://onlymanes.ai/privacy.html" style="color:var(--faint);">隐私政策</a> · <a href="https://onlymanes.ai/terms.html" style="color:var(--faint);">服务条款</a></span><br>
+    <span data-en-html="Operated by Beijing Chenhui Jiahe Technology Co., Ltd. · Contact: <a href=&quot;mailto:onlymanes@gmail.com&quot; style=&quot;color:var(--faint);&quot;>onlymanes@gmail.com</a> · <a href=&quot;https://onlymanes.ai/privacy.html&quot; style=&quot;color:var(--faint);&quot;>Privacy</a> · <a href=&quot;https://onlymanes.ai/terms.html&quot; style=&quot;color:var(--faint);&quot;>Terms</a>">运营主体：北京晨晖佳合科技有限公司 · 联系：<a href="mailto:onlymanes@gmail.com" style="color:var(--faint);">onlymanes@gmail.com</a> · <a href="https://onlymanes.ai/privacy.html" style="color:var(--faint);">隐私政策</a> · <a href="https://onlymanes.ai/terms.html" style="color:var(--faint);">服务条款</a></span><br>
   </footer>
 </div>
 
@@ -392,6 +392,24 @@
 const API_BASE = localStorage.getItem('om_api') || 'https://api.onlymanes.ai';
 const $ = id => document.getElementById(id);
 const statusEl = $('status'), submitBtn = $('submitBtn');
+/* 引擎未加载时禁用提交，防早提交拿到无命盘的故事（豆包第四轮 P0-2）。
+   引擎是 defer 加载的大文件，慢网下可能晚于表单出现；轮询到 ZiweiEngine 就绪才放行。 */
+submitBtn.disabled = true;
+statusEl.textContent = t('engineLoading');
+(function waitForEngine() {
+  let waited = 0;
+  const timer = setInterval(() => {
+    waited += 500;
+    if (typeof ZiweiEngine !== 'undefined') {
+      clearInterval(timer);
+      submitBtn.disabled = false;
+      if (statusEl.textContent === t('engineLoading')) statusEl.textContent = '';
+    } else if (waited >= 60000) {
+      clearInterval(timer);
+      statusEl.textContent = t('engineTimeout');
+    }
+  }, 500);
+})();
 const STEMS = ['甲','乙','丙','丁','戊','己','庚','辛','壬','癸'];
 const BRANCHES = ['子','丑','寅','卯','辰','巳','午','未','申','酉','戌','亥'];
 const LUNAR_MONTH_NAMES = ['正月','二月','三月','四月','五月','六月','七月','八月','九月','十月','冬月','腊月'];
@@ -478,14 +496,16 @@ const HEXAGRAM_MEANINGS_EN = {
 const T = {
   pickSolar: { zh: '请选阳历年月日。', en: 'Please pick the solar date (year, month, day).' },
   pickLunar: { zh: '请选农历年月日。', en: 'Please pick the lunar date (year, month, day).' },
-  working: { zh: '正在排盘、起卦、讲故事……（约半分钟）', en: 'Casting the chart, drawing the hexagram, telling the story… (about half a minute)' },
+  working: { zh: '正在排盘、起卦、讲故事……（约半分钟到一分钟）', en: 'Casting the chart, drawing the hexagram, telling the story… (about half a minute to a minute)' },
+  engineLoading: { zh: '命盘引擎加载中，请稍候…', en: 'Loading the chart engine, please wait…' },
+  engineTimeout: { zh: '命盘引擎加载超时，请刷新页面重试。', en: 'The chart engine took too long to load. Please refresh the page and try again.' },
   cancelled: { zh: '已取消。', en: 'Cancelled.' },
   chartError: { zh: '排盘出错，请检查出生日期后重试。', en: 'Chart error — please check the birth date and try again.' },
   lunarInvalid: { zh: '农历日期无效，请重新选择。', en: 'Invalid lunar date — please pick again.' },
   dailyLimit: { zh: '今天已经测过一次啦，明天再来。', en: 'You have already had one reading today. Please come back tomorrow.' },
   modelFailed: { zh: '故事没写出来，请稍后再试一次（今天的次数还在）。', en: 'The story did not come out. Please try again shortly (today’s attempt is still yours).' },
   genericError: { zh: '出错了，请稍后再试。', en: 'Something went wrong. Please try again shortly.' },
-  connFailed: { zh: '服务器暂时没有回应，请稍后再试一次。', en: 'The server didn’t respond in time. Please try again shortly.' },
+  connFailed: { zh: '网络没连上（服务器暂时没有回应），请检查网络后重试一次。', en: 'The network didn’t connect (the server didn’t respond in time). Please check your connection and try again.' },
   retrying: { zh: '第一次没连上，正在重试…', en: 'First try didn’t connect — retrying…' },
 };
 function t(key) { return (T[key] && T[key][LANG]) || (T[key] && T[key].zh) || key; }
@@ -591,7 +611,8 @@ function auditHTML(j, form) {
     const ae = j.audit_en || {};
     const items = [
       '<b>Chart</b>: ' + esc(ae.chart || a.chart) + '. ' + (a.chartUsed ? 'Your chart was cast and sent with the request as story material.' : 'The chart engine did not load this time, so the story used only Plum Blossom Numerology and your birth details.'),
-      '<b>Randomness</b>: ' + esc(ae.random || a.random) + '. Which star was cast only decides which star’s chart tells the story; the star itself is not revealed.',
+      '<b>Randomness</b>: ' + esc(ae.random || a.random) + '. Which star was cast only decides which star’s chart tells the story; the name is not labelled — the chart is below, check it there.',
+      '<b>Model</b>: ' + esc(ae.model || a.model || 'Gemini, with DeepSeek as fallback') + '.',
       '<b>Your words</b>: ' + esc(ae.userWords || a.userWords) + (form.sentence ? ' — your sentence “' + esc(form.sentence) + '” appears in the story as written.' : ' — you did not write a sentence this time, so nothing is quoted.'),
       '<b>Time</b>: ' + (a.timeKnown ? 'You gave a birth time, so the chart was cast for that hour.' : 'You did not give a birth time, so the chart was cast for the noon hour; filling it in makes it fit better.') + (a.lateZishi ? ' After 23:00 counts as the next day.' : '') + (lastGenderKnown ? '' : ' Gender not specified; the chart was cast as a female chart.'),
       '<b>Privacy</b>: ' + esc(ae.privacy || a.privacy) + '.',
@@ -601,7 +622,8 @@ function auditHTML(j, form) {
   }
   const items = [
     '<b>命盘</b>：' + esc(a.chart) + '。' + (a.chartUsed ? '你的命盘已排好，随请求发给模型作故事素材。' : '本次排盘引擎未加载，只用了梅花易数与出生信息讲故事。'),
-    '<b>随机</b>：' + esc(a.random) + '。掷到哪一颗，只决定用哪一颗的命盘讲故事，具体是哪一颗不公开。',
+    '<b>随机</b>：' + esc(a.random) + '。掷到哪一颗，只决定用哪一颗的命盘讲故事；不标注名字，命盘如下，可核对。',
+    '<b>模型</b>：' + esc(a.model || 'Gemini，失败时回退 DeepSeek') + '。',
     '<b>你写的</b>：' + esc(a.userWords) + (form.sentence ? '——你那句“' + esc(form.sentence) + '”原样在故事里。' : '——你这次没写一句话，故事里就没有引用。'),
     '<b>时间</b>：' + (a.timeKnown ? '你填了出生时间，按该时辰排盘。' : '你没填出生时间，暂按午时排盘；填了会更贴合。') + (a.lateZishi ? '23:00 后按次日排盘。' : '') + (a.genderNote ? esc(a.genderNote) + '。' : ''),
     '<b>隐私</b>：' + esc(a.privacy) + '。',
@@ -812,6 +834,8 @@ function buildUserChart(form) {
 /* ---------- 提交 ---------- */
 async function fetchWithTimeout(url, options, timeoutMs, externalSignal) { const c = new AbortController(); const timer = setTimeout(() => c.abort(), timeoutMs || 30000); const onExternalAbort = () => c.abort(); if (externalSignal) { if (externalSignal.aborted) c.abort(); else externalSignal.addEventListener('abort', onExternalAbort, { once: true }); } try { return await fetch(url, Object.assign({}, options, { signal: c.signal })); } finally { clearTimeout(timer); if (externalSignal) externalSignal.removeEventListener('abort', onExternalAbort); } }
 $('formCard').addEventListener('submit', async (e) => { e.preventDefault();
+  /* 兜底：引擎仍未就绪时拒绝提交，避免无命盘故事。 */
+  if (typeof ZiweiEngine === 'undefined') { statusEl.textContent = t('engineLoading'); return; }
   const mode = document.querySelector('input[name=mode]:checked').value;
   const calendar = document.querySelector('input[name=calendar]:checked').value;
   let birthDate = '';
@@ -882,7 +906,7 @@ $('formCard').addEventListener('submit', async (e) => { e.preventDefault();
       try {
         r = await fetchWithTimeout(API_BASE + '/api/ziwei', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'text/plain' },
           body: JSON.stringify(payload),
         }, 90000, genController.signal);
         break;
@@ -1095,7 +1119,7 @@ $('emailBtn').onclick = async () => {
   try {
     const r = await fetch(API_BASE + '/api/ziwei-email', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'text/plain' },
       body: JSON.stringify({ email: email }),
     });
     if (r.ok) {
@@ -1175,7 +1199,7 @@ function setupFlower() {
 async function recordGift(token, method) {
   try {
     await fetch(API_BASE + '/api/ziwei-gift', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      method: 'POST', headers: { 'Content-Type': 'text/plain' },
       body: JSON.stringify({ token: token, method: method }),
     });
   } catch (e) { /* 记录失败也不拦着花的呈现 */ }
@@ -1204,7 +1228,7 @@ async function recordGift(token, method) {
   try {
     fetch(API_BASE + '/api/visit', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'text/plain' },
       body: JSON.stringify({
         path: location.pathname, ref: document.referrer,
         lang: navigator.language, tz: Intl.DateTimeFormat().resolvedOptions().timeZone,

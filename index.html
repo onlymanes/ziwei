@@ -392,24 +392,6 @@
 const API_BASE = localStorage.getItem('om_api') || 'https://api.onlymanes.ai';
 const $ = id => document.getElementById(id);
 const statusEl = $('status'), submitBtn = $('submitBtn');
-/* 引擎未加载时禁用提交，防早提交拿到无命盘的故事（豆包第四轮 P0-2）。
-   引擎是 defer 加载的大文件，慢网下可能晚于表单出现；轮询到 ZiweiEngine 就绪才放行。 */
-submitBtn.disabled = true;
-statusEl.textContent = t('engineLoading');
-(function waitForEngine() {
-  let waited = 0;
-  const timer = setInterval(() => {
-    waited += 500;
-    if (typeof ZiweiEngine !== 'undefined') {
-      clearInterval(timer);
-      submitBtn.disabled = false;
-      if (statusEl.textContent === t('engineLoading')) statusEl.textContent = '';
-    } else if (waited >= 60000) {
-      clearInterval(timer);
-      statusEl.textContent = t('engineTimeout');
-    }
-  }, 500);
-})();
 const STEMS = ['甲','乙','丙','丁','戊','己','庚','辛','壬','癸'];
 const BRANCHES = ['子','丑','寅','卯','辰','巳','午','未','申','酉','戌','亥'];
 const LUNAR_MONTH_NAMES = ['正月','二月','三月','四月','五月','六月','七月','八月','九月','十月','冬月','腊月'];
@@ -509,6 +491,26 @@ const T = {
   retrying: { zh: '第一次没连上，正在重试…', en: 'First try didn’t connect — retrying…' },
 };
 function t(key) { return (T[key] && T[key][LANG]) || (T[key] && T[key].zh) || key; }
+
+/* 引擎未加载时禁用提交，防早提交拿到无命盘的故事（豆包第四轮 P0-2）。
+   引擎是 defer 加载的大文件，慢网下可能晚于表单出现；轮询到 ZiweiEngine 就绪才放行。
+   注意：必须放在 t()/T 定义之后，否则会因 T 未初始化而抛错、整个脚本中断。 */
+submitBtn.disabled = true;
+statusEl.textContent = t('engineLoading');
+(function waitForEngine() {
+  let waited = 0;
+  const timer = setInterval(() => {
+    waited += 500;
+    if (typeof ZiweiEngine !== 'undefined') {
+      clearInterval(timer);
+      submitBtn.disabled = false;
+      if (statusEl.textContent === t('engineLoading')) statusEl.textContent = '';
+    } else if (waited >= 60000) {
+      clearInterval(timer);
+      statusEl.textContent = t('engineTimeout');
+    }
+  }, 500);
+})();
 
 /* 下拉选项随语言切换（JS 生成的选项没有 data-en，在此逐项改写；不重建列表，不丢已选值） */
 function applyLangToSelects() {

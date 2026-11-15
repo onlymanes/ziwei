@@ -330,7 +330,7 @@
 
     <div class="card" id="deepCard">
       <h2 data-en="Deep version · Coming soon">深度版 · 即将推出</h2>
-      <p data-en="The deep version will tell a longer story with a deeper reading of your chart — a paid unlock. It is still being built.">深度版会有更长的故事、更深的命盘解读——付费解锁。正在建设中。</p>
+      <p data-en="The deep version tells a longer story with a deeper reading of your chart — a paid unlock. About 3,000 words + a palace-by-palace reading of all 12 palaces + a downloadable PDF. ¥39 per reading, ¥19 at launch; available for purchase after launch. Still being built.">深度版会有更长的故事、更深的命盘解读——付费解锁。约 3,000 字 + 12 宫逐宫解读 + 可下载 PDF。深度版 ¥39 / 次，首发 ¥19，上线后开放购买。正在建设中。</p>
       <p><button class="btn" id="deepBtn" data-en="Notify me when it launches">上线通知我</button></p>
       <div id="deepEmailWrap" class="hidden">
         <p data-en="Leave your email and we’ll write as soon as the deep version launches. We never share your address.">留下邮箱，上线第一时间通知你。绝不外泄。</p>
@@ -360,14 +360,9 @@
     </div>
 
     <div class="card" id="shareCard">
-      <h2 data-en="Share &amp; keep in touch">分享与订阅</h2>
+      <h2 data-en="Share">分享</h2>
       <p><button class="btn" id="shareBtn" data-en="Share this test">分享这个测试</button> <span id="shareNote" style="font-size:13.5px; color:var(--muted);"></span></p>
-      <p data-en="Want a deeper version? Leave your email (optional — we only write when there is a deeper version, and never share your address).">想要更深版本？留下邮箱（自愿——只在有更深版本时才写信，绝不外泄）。</p>
-      <div class="email-row">
-        <input type="email" id="emailInput" placeholder="你的邮箱（可不填）" data-en-ph="Your email (optional)" maxlength="100">
-        <button class="btn ghost" id="emailBtn" data-en="Keep me posted">告诉我</button>
-      </div>
-      <p class="note" id="emailNote" style="margin:6px 0 0;"></p>
+      <p data-en="Want the deep version? Leave your email in the Deep version card above.">想要深度版？在上方“深度版 · 即将推出”卡片留邮箱。</p>
     </div>
   </div>
 
@@ -1123,34 +1118,6 @@ $('shareBtn').onclick = async () => {
     note.textContent = LANG === 'en' ? 'Link copied.' : '链接已复制。';
   } catch (e) {
     note.textContent = url;
-  }
-};
-
-/* ---------- 自愿邮箱收集 ---------- */
-$('emailBtn').onclick = async () => {
-  const input = $('emailInput');
-  const note = $('emailNote');
-  const email = input.value.trim();
-  if (!email) { note.textContent = LANG === 'en' ? 'Email is optional — leave it blank if you prefer.' : '邮箱是自愿的，不想留可以空着。'; return; }
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { note.textContent = LANG === 'en' ? 'That email doesn’t look right — please check it.' : '这个邮箱看起来不对，请检查一下。'; return; }
-  $('emailBtn').disabled = true;
-  note.textContent = LANG === 'en' ? 'Sending…' : '正在发送…';
-  try {
-    const r = await fetch(API_BASE + '/api/ziwei-email', {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain' },
-      body: JSON.stringify({ email: email }),
-    });
-    if (r.ok) {
-      note.textContent = LANG === 'en' ? 'Got it — we’ll write only when there’s a deeper version.' : '收到了——只在有更深版本时才写信。';
-      input.value = '';
-    } else {
-      note.textContent = LANG === 'en' ? 'Something went wrong — please try again later.' : '没发出去，请稍后再试。';
-      $('emailBtn').disabled = false;
-    }
-  } catch (e) {
-    note.textContent = LANG === 'en' ? 'Something went wrong — please try again later.' : '没发出去，请稍后再试。';
-    $('emailBtn').disabled = false;
   }
 };
 

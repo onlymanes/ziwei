@@ -624,7 +624,7 @@ function auditHTML(j, form) {
   if (LANG === 'en') {
     const ae = j.audit_en || {};
     const items = [
-      '<b>Chart</b>: ' + esc(ae.chart || a.chart) + '. ' + (a.chartUsed ? 'Your chart was cast and sent with the request as story material.' : 'The chart engine did not load this time, so the story used only Plum Blossom Numerology and your birth details.'),
+      '<b>Chart</b>: ' + esc(ae.chart || a.chart) + '.' + (a.chartUsed ? '' : ' The chart engine did not load this time, so the story used only Plum Blossom Numerology and your birth details.'),
       '<b>Randomness</b>: ' + esc(ae.random || a.random) + '. Which star was cast only decides which star’s chart tells the story; the name is not labelled — the chart is below, check it there.',
       '<b>Model</b>: ' + esc(ae.model || a.model || 'Gemini, with DeepSeek as fallback') + '.',
       '<b>Your words</b>: ' + esc(ae.userWords || a.userWords) + (form.sentence ? ' — your sentence “' + esc(form.sentence) + '” appears in the story as written.' : ' — you did not write a sentence this time, so nothing is quoted.'),
@@ -635,7 +635,7 @@ function auditHTML(j, form) {
     return items;
   }
   const items = [
-    '<b>命盘</b>：' + esc(a.chart) + '。' + (a.chartUsed ? '你的命盘已排好，随请求发给模型作故事素材。' : '本次排盘引擎未加载，只用了梅花易数与出生信息讲故事。'),
+    '<b>命盘</b>：' + esc(a.chart) + '。' + (a.chartUsed ? '' : '本次排盘引擎未加载，只用了梅花易数与出生信息讲故事。'),
     '<b>随机</b>：' + esc(a.random) + '。掷到哪一颗，只决定用哪一颗的命盘讲故事；不标注名字，命盘如下，可核对。',
     '<b>模型</b>：' + esc(a.model || 'Gemini，失败时回退 DeepSeek') + '。',
     '<b>你写的</b>：' + esc(a.userWords) + (form.sentence ? '——你那句“' + esc(form.sentence) + '”原样在故事里。' : '——你这次没写一句话，故事里就没有引用。'),
